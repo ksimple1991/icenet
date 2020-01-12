@@ -1,1 +1,6 @@
-.svn
+.svn/
+.vscode/
+.a
+.so
+.o
+.zip
