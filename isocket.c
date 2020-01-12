@@ -15,11 +15,18 @@
 
 static bool isocket_check_socket(struct isocket *socket);
 
-bool isocket_init(struct isocket *socket)
+struct isocket* isocket_new()
 {
-    socket->fd = -1;
-    socket->ioc = NULL;
-    return true;
+    struct isocket *socket;
+    socket = (struct isocket *)malloc(sizeof(struct iosocket));
+    if (socket != NULL)
+    {
+        socket->fd = -1;
+        memset(socket->address, 0, sizeof(socket->address));
+        socket->ioc = NULL;
+    }
+
+    return socket;
 }
 
 void isocket_del(struct isocket *socket)
@@ -337,10 +344,9 @@ struct isocket *isocket_server_accept(struct isocket *server)
     int fd = accept(server->fd, (struct sockaddr *)&addr, (socklen_t *)&len);
     if (fd >= 0)
     {
-        handle_socket = malloc(sizeof(struct iosocket));
+        handle_socket = isocket_new();
         if (handle_socket != NULL)
         {
-            isocket_init(handle_socket);
             isocket_setup(handle_socket, fd, &addr);
         }
     }

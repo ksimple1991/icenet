@@ -19,6 +19,8 @@ typedef struct isocket
     struct iocomponent *ioc;
 } isocket_t;
 
+struct isocket* isocket_new();
+
 void isocket_del(struct isocket *socket);
 
 bool isocket_setup(struct isocket *socket, int sockfd, struct sockaddr *host_address);

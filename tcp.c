@@ -3,12 +3,14 @@
 #include "util.h"
 #include "transport.h"
 
-bool tcp_acceptor_init(struct iocomponent *ioc, bool is_server);
+bool tcp_acceptor_init(struct iocomponent *ioc, struct transport *owner, \
+        struct socket *socket, bool is_server);
 void tcp_acceptor_close(struct iocomponent *ioc);
 bool tcp_acceptor_handle_read(struct iocomponent *ioc);
 void tcp_acceptor_check_timeout(struct iocomonent *ioc, int64_t now);
 
-bool tcp_component_init(struct iocomponent *ioc, bool is_server);
+bool tcp_component_init(struct iocomponent *ioc, struct transport *owner, \
+        struct socket *socket, bool is_server);
 void tcp_component_close(struct iocomponent *ioc);
 bool tcp_component_handle_write(struct iocomponent *ioc);
 bool tcp_component_handle_read(struct iocomponent *ioc);
@@ -32,33 +34,29 @@ struct iocomponent acceptor_component =
     .check_timeout = tcp_acceptor_check_timeout
 };
 
-struct iocomponent tcpcomponent = 
+
+bool tcp_acceptor_init(struct iocomponent *ioc, struct transport *owner, \
+        struct socket *socket, bool is_server)
 {
-    .list = NULL,
-    .owner = NULL,
-    .socket = NULL,
-    .socket_event = NULL,
-    .state = IOC_UNCONNECTED,
-    .auto_reconn = false,
-    .inuse = false,
-    .last_use_time = 0,
-    .buffer = NULL,
-    .init = tcp_component_init,
-    .close = tcp_component_close,
-    .handle_write_event = tcp_component_handle_read,
-    .handle_read_event = tcp_component_handle_read,
-    .check_timeout = tcp_component_check_timeout
-};
+    bool rc;
 
+    rc = iocomponent_init(ioc, owner, socket);
+    if (rc == true)
+    {
+        isocket_set_blocking(socket, false);
+        rc = isocket_server_listen(socket);
+    }
 
-bool tcp_acceptor_init(struct iocomponent *ioc, bool is_server)
-{
-    struct socket *socket = ioc->socket;
+    ioc->type = IOC_TYPE_ACCEPTOR;
+    ioc->is_server = is_server;
 
-    isocket_set_blocking(socket, false);
-    isocket_set_reuse_port(socket, true);
-    isocket_listen()
-    return true;
+    ioc->init = tcp_acceptor_init;
+    ioc->close = tcp_acceptor_close;
+    ioc->handle_write_event = NULL;
+    ioc->handle_read_event = tcp_acceptor_handle_read;
+    ioc->check_timeout = tcp_acceptor_check_timeout;
+
+    return rc;
 }
 
 void tcp_acceptor_close(struct iocomponent *ioc)
@@ -101,7 +99,8 @@ struct tcp_component_data
     int64_t start_connect_time;
 };
 
-bool tcp_component_init(struct iocomponent *ioc, bool is_server)
+bool tcp_component_init(struct iocomponent *ioc, struct transport *owner, \
+        struct socket *socket, bool is_server)
 {
     struct isocket *socket = ioc->socket;
 

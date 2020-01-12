@@ -20,6 +20,13 @@ enum
     IOC_UNCONNECTED
 };
 
+enum
+{
+    IOC_TYPE_ACCEPTOR = 1,
+    IOC_TYPE_TCP,
+    IOC_TYPE_UDP,
+};
+
 /**
  * IO对象的抽象，如 tcp、udp、unix domain等服务端、客户端
  * tcp_acceptor, tcp_ioc, udp_ioc
@@ -27,6 +34,7 @@ enum
 struct iocomponent
 {
     struct list_head *list;
+    int type;
     struct transport *owner;
     struct isocket *socket;
     struct epoll_socket_event *socket_event;
@@ -37,14 +45,20 @@ struct iocomponent
     int64_t last_use_time;
     void *extra;
 
-    // bool (*init)(struct iocomponent *ioc, struct transport *owner, \
-    //     struct socket *socket, bool is_server);
-    bool (*init)(struct iocomponent *ioc, bool is_server);
+    bool (*init)(struct iocomponent *ioc, struct transport *owner, \
+        struct socket *socket, bool is_server);
     void (*close)(struct iocomponent *ioc);
     bool (*handle_wirte_event)(struct iocomponent *ioc);
     bool (*handle_read_event)(struct iocomponent *ioc);
     void (*check_timeout)(struct iocomonent *ioc, int64_t now);
 };
+
+struct iocomponent* iocomponent_new();
+
+void iocomponent_del(struct iocomponent *ioc);
+
+bool iocomponent_init(struct iocomponent *ioc, struct transport *owner, \
+    struct isocket *socket);
 
 void iocomponent_enable_write(struct iocomponent *ioc, bool write_on);
 

@@ -1,21 +1,43 @@
 #include "iocomponent.h"
 #include "isocket.h"
+#include "util.h"
+
+
+struct iocomponent* iocomponent_new()
+{
+    struct iocomponent *ioc;
+
+    ioc = (struct iocomponent *)malloc(sizeof(struct iocomponent));
+    if (ioc != NULL)
+    {
+        memset(ioc, 0, sizeof(struct iocomponent));
+    }
+
+    return ioc;
+}
+
+void iocomponent_del(struct iocomponent *ioc)
+{
+    iocomponent_destroy(ioc);
+    free(ioc);
+}
 
 bool iocomponent_init(struct iocomponent *ioc, struct transport *owner, \
     struct isocket *socket)
 {
+    INIT_LIST_HEAD(ioc->list);
+    ioc->type = 0;
+
     ioc->owner = owner;
     ioc->socket = socket;
-    
+
     socket->ioc = ioc;
 
     ioc->socket_event = NULL;
     ioc->auto_reconn = false;
-    ioc->last_use_time = time(NULL);
+    ioc->last_use_time = get_time();
     ioc->inuse = false;
     ioc->state = IOC_UNCONNECTED;
-    INIT_LIST_HEAD(ioc->list);
-
     return true;
 }
 
@@ -23,7 +45,7 @@ bool iocomponent_destroy(struct iocomponent *ioc)
 {
     if (ioc->socket)
     {
-        isock_destroy(ioc->socket);
+        isocket_del(ioc->socket);
         ioc->socket = NULL;
     }
 }

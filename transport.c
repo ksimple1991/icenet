@@ -1,6 +1,7 @@
 
 #include "csv_packet_encode.h"
 #include "iocomponent.h"
+#include "tcp.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -21,34 +22,17 @@ void *start_func(void *arg)
 int transport_init(struct transport *trans)
 {
     int result;
-    pthread_t *tids;
-    int threads_num = 5;
-
-    tids = malloc(sizeof(pthread_t) * threads_num);
-    if (tids == NULL)
-    {
-        return ENOMEM;
-    }
 
     result = init_pthread_lock(&trans->ioc_mutex);
     if (result != 0)
     {
-        free(tids);
-        return result;
-    }
-
-    if ((result = create_work_threads(&threads_num, start_func, \
-        (void *)trans, tids)) != 0)
-    {
-        free(tids);
-        pthread_mutex_destroy(&trans->ioc_mutex);
         return result;
     }
 
     trans->stop = false;
     trans->ep_fd = -1;
-    trans->threads_num = threads_num;
-    trans->worker_tids = tids;
+    trans->threads_num = 0;
+    trans->worker_tids = NULL;
     
     INIT_LIST_HEAD(&trans->ioc_list);
     trans->ioc_list_changed = false;
@@ -82,6 +66,30 @@ bool transport_destroy(struct transport *trans)
         free(trans->worker_tids);
         trans->worker_tids = NULL;
     }
+}
+
+bool transport_start(struct transport *trans)
+{
+    int result;
+    pthread_t *tids;
+    int threads_num = 5;
+
+    signal(SIGPIPE, SIG_IGN);
+
+    tids = malloc(sizeof(pthread_t) * threads_num);
+    if (tids == NULL)
+    {
+        return false;
+    }
+
+    if ((result = create_work_threads(&threads_num, start_func, \
+        (void *)trans, tids)) != 0)
+    {
+        free(tids);
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -174,9 +182,12 @@ void transport_timeout_loop(struct transport *trans)
     }
 }
 
+/**
+ * 线程函数
+ */
 void transport_run(struct transport *trans)
 {
-    signal(SIGPIPE, SIG_IGN);
+    
 
     // 启动读写线程
     transport_event_loop(trans);
@@ -236,3 +247,159 @@ void transport_remove_component(struct transport *trans, struct iocomponent *ioc
     trans->ioc_list_changed = true;
 }
 
+static bool parse_addr(char *src, char **args, int cnt)
+{
+    int index = 0;
+    char *prev = src;
+
+    while (*src)
+    {
+        if (*src = ':')
+        {
+            *src = '\0';
+            args[index++] = prev;
+        
+            if (inex > cnt)
+            {
+                return index;
+            }
+
+            prev = src + 1;
+        }
+
+        src++;
+    }
+
+    args[index++] = prev;
+    return index;
+}
+
+struct connection* transport_listen(struct transport *trans, const char *spec)
+{
+    char tmp[1024];
+    char *args[32] = {NULL};
+    strncpy(tmp, spec, 1024);
+    tmp[1023] = '\0';
+
+    if (parse_addr(tmp, args, 32) != 3)
+    {
+        return NULL;
+    }
+
+    if (strcasecmp(args[0], "tcp") == 0)
+    {
+        char *host = args[1];
+        int port = atoi(args[2]);
+
+        struct isocket *socket = isocket_new();
+        if (socket == NULL)
+        {
+            return NULL;
+        }
+
+        if (!isocket_set_address(socket, host, port))
+        {
+            isocket_del(socket);
+            return NULL;
+        }
+
+        struct iocomponent *acceptor = iocomponent_new();
+        if (acceptor == NULL)
+        {
+            isocket_del(socket);
+            return NULL;
+        }
+
+        if (!tcp_acceptor_init(acceptor, trans, socket, true))
+        {
+            iocomponent_del(acceptor);
+            return NULL;
+        }
+
+        transport_add_component(acceptor, true, false);
+        return acceptor;
+    }
+    else if (strcasecmp(args[0], "udp") == 0)
+    {
+        /* do nothing */
+    }
+
+    return NULL;
+}
+
+struct connection* transport_connect(struct transport *trans, \
+    const char *spec, bool auto_reconn)
+{
+    char tmp[1024];
+    char *args[32] = {NULL};
+    strncpy(tmp, spec, 1024);
+    tmp[1023] = '\0';
+
+    if (parse_addr(tmp, args, 32) != 3)
+    {
+        return NULL;
+    }
+
+    if (strcasecmp(args[0], "tcp") == 0)
+    {
+        char *host = args[1];
+        int port = atoi(args[2]);
+
+        struct isocket *socket = isocket_new();
+        if (socket == NULL)
+        {
+            return NULL;
+        }
+
+        if (!isocket_set_address(socket, host, port))
+        {
+            isocket_del(socket);
+            return NULL;
+        }
+
+        struct iocomponent *component = iocomponent_new();
+        if (component == NULL)
+        {
+            isocket_del(socket);
+            return NULL;
+        }
+
+        component->auto_reconn = true;
+        if (!tcp_component_init(component, trans, socket, false))
+        {
+            iocomponent_del(component);
+            LOG(LOG_LEVEL_ERROR, "init fail, host: %s, port: %d", host, port);
+            return NULL;
+        }
+
+        transport_add_component(trans, component, true, true);
+
+        return component;
+    }
+    else if (strcasecmp(args[0], "udp"))
+    {
+        /* do nothing */
+    }
+
+    return NULL;
+}
+
+bool transport_disconnect(struct transport *trans, struct connection *connection)
+{
+    struct iocomponent *ioc;
+
+    if (connection == NULL)
+    {
+        return false;
+    }
+
+    ioc = connection->ioc;
+    ioc->auto_reconn = false;
+
+    if (ioc->socket)
+    {
+        isocket_shutdown(ioc->socket);
+    }
+
+    return true;
+}
