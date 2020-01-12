@@ -1,12 +1,16 @@
 
 #include "share_func.h"
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
+
 
 #define RET_ERR(error) (-(error))
 
@@ -190,3 +194,9 @@ int create_work_threads(int *count, \
     return result;
 }
 
+int64_t get_time()
+{
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return ((int64_t)t.tv_sec * (int64_t)1000000 + (int64_t)t.tv_usec);
+}

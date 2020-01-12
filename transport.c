@@ -1,9 +1,6 @@
 
 #include "csv_packet_encode.h"
-#include "list.h"
-#include "share_func.h"
-#include "epollsocketevent.h"
-
+#include "iocomponent.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -11,29 +8,10 @@
 #include <time.h>
 #include <unistd.h>
 
+void transport_add_component(struct transport *trans, \
+    struct iocomponent *ioc, bool read_on, bool write_on);
 
-// typedef struct connection
-// {
-//     struct list_head list;
-//     struct rbld_event_base *base;
-//     int fd;
-//     char address[16];
-//     int status;
-//     csv_packet_buffer_t input;
-//     csv_packet_buffer_t output;
-// } connection_t;
-
-typedef struct transport
-{
-    bool stop;
-    int threads_num;
-    pthread_t *worker_tids;
-    struct epoll_socket_event sock_event;
-    bool ioc_list_changed;
-    int ioc_count;
-    struct list_head ioc_list;
-    pthread_mutex_t ioc_mutex;
-} transport_t;
+void transport_remove_component(struct transport *trans, struct iocomponent *ioc);
 
 void *start_func(void *arg)
 {
@@ -168,6 +146,7 @@ void transport_event_loop(struct transport *trans, \
             if (events[i].read_occurred)
             {
                 // 读事件
+                ioc->
             }
 
             if (events[i].write_occurred)

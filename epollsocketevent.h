@@ -1,4 +1,5 @@
-#define EPOLLSOCKETEVENT_T
+#ifndef ICENET_EPOLLSOCKETEVENT_H
+#define ICENET_EPOLLSOCKETEVENT_H
 
 #include "isocket.h"
 #include <stdbool.h>
@@ -44,4 +45,4 @@ int epoll_get_events(struct epoll_socket_event *ep_event, \
 }
 #endif
 
-#endif /* EPOLLSOCKETEVENT_T */
+#endif /* ICENET_EPOLLSOCKETEVENT_H */

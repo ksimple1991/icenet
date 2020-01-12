@@ -1,48 +1,15 @@
-#ifndef ISOCKET_H
-#define ISOCKET_H
+#ifndef ICENET_ISOCKET_H
+#define ICENET_ISOCKET_H
 
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sys/socket.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct epoll_socket_event;
-struct transport;
-struct isocket;
-
-enum
-{
-    IOC_CONNECTING = 1,
-    IOC_CONNECTED,
-    IOC_CLOSED,
-    IOC_UNCONNECTED
-};
-
-/**
- * IO对象的抽象，如 tcp、udp、unix domain等服务端、客户端
- * tcp_acceptor, tcp_ioc, udp_ioc
- */
-struct iocomponent
-{
-    struct list_head *list;
-    struct transport *owner;
-    struct isocket *socket;
-    struct epoll_socket_event *socket_event;
-    int state; // 连接状态
-    bool auto_reconn; // 自动重连
-    bool inuse;
-    int64_t last_use_time;
-    char *buffer;
-
-    void (*init)(struct iocomponent *ioc);
-    void (*close)(struct iocomponent *ioc);
-    bool (*handle_wirte_event)(struct iocomponent *ioc);
-    bool (*handle_read_event)(struct iocomponent *ioc);
-};
+struct iocomponent;
 
 typedef struct isocket
 {
@@ -52,9 +19,52 @@ typedef struct isocket
     struct iocomponent *ioc;
 } isocket_t;
 
+void isocket_del(struct isocket *socket);
+
+bool isocket_setup(struct isocket *socket, int sockfd, struct sockaddr *host_address);
+
+bool isocket_set_address(struct isocket *socket, const char *address, const int port);
+
+const char *isocket_get_address_str(struct isocket *socket);
+
+void isocket_close(struct isocketet *socket);
+
+void isocket_shutdown(struct isocket *socket);
+
+bool isocket_create_udp(struct isocket *socket);
+
+int isocket_get_fd(struct isocket *socket);
+
+uint64_t isocket_get_peer_id(struct isocket *socket);
+
+int isocket_get_so_error(struct isocket *socket);
+
+int isocket_write(struct isocket *socket, const void *data, int len);
+
+int isocket_read(struct isocket *socket, void *data, int len);
+
+int isocket_last_error();
+
+bool isocket_connect(struct isocket *socket);
+
+bool isocket_set_blocking(struct isocket *socket, bool blocking_enabled);
+
+bool isocket_set_reuse_port(struct isocket *socket, bool on);
+
+bool isocket_set_reuse_address(struct isocket *socket, bool on);
+
+bool isocket_set_keep_alive(struct isocket *socket, bool on);
+
+bool isocket_set_tcp_no_delay(struct isocket *socket, bool nodelay);
+
+bool isocket_set_int_option(struct isocket *socket, int option, int value);
+
+struct isocket *isocket_server_accept(struct isocket *server);
+
+bool isocket_server_listen(struct isocket *socket);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ISOCKET_H */
+#endif /* ICENET_ISOCKET_H */
