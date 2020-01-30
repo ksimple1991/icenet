@@ -4,6 +4,12 @@
 
 #include <stdint.h>
 
+struct list_head
+{
+    struct list_head *prev;
+    struct list_head *next;
+};
+
 /*
  * Simple doubly linked list implementation.
  *

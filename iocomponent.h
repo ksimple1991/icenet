@@ -2,11 +2,14 @@
 #define ICENET_IOCOMONENT_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "epollsocketevent.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define ICENET_MAX_TIME (INT64_MAX)
 
 struct epoll_socket_event;
 struct transport;

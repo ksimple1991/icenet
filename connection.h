@@ -3,23 +3,28 @@
 
 #include "iocomponent.h"
 #include "isocket.h"
+#include "packet_queue.h"
 #include "packet_streamer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
+#define READ_WRITE_SIZE 8192
 
+#ifndef UNUSED
+#define UNUSED(v) ((void)(v))
 
-struct packet_queue
+struct ipacket_handler
 {
-    int size;
-    void *head;
-    void *tail;
+    void (*destroy)(struct ipacket_handler *packet_handler);
+    int (*handle_packet)(struct packet *packet, void *args);
 };
 
 struct connection
 {
+    bool isserver;
+    struct ipacket_handler *default_packet_handler;
     struct iocomponent *ioc;
     struct isocket *socket;
     struct packet_streamer *streamer;
@@ -31,6 +36,29 @@ struct connection
     int queue_limit;
     int queue_timeout;
 };
+
+bool connection_init(struct connection *conn, struct isocket *socket, \
+    struct packet_streamer *streamer)
+{
+    conn->isserver = false;
+    conn->default_packet_handler = NULL;
+    conn->ioc = NULL;
+    conn->socket = socket;
+    conn->streamer = streamer;
+    conn->queue_timeout = 500;
+    conn->queue_limit = 50;
+    conn->queue_total_size = 0;
+
+    // init queue
+
+    return true;
+}
+
+
+
+
+
+
 
 bool connection_post_packet()
 {

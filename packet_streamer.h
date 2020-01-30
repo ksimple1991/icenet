@@ -1,6 +1,7 @@
 #ifndef ICENET_PACKET_STREAMER_H
 #define ICENET_PACKET_STREAMER_H
 
+#include "buffer.h"
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sys/socket.h>
@@ -14,10 +15,9 @@ struct packet;
 
 struct packet_streamer
 {
-    bool exist_packet_header;
-    
-    struct packet* (*decode)(struct data_buffer *input);
-    bool (*encode)(struct packet *packet, struct data_buffer *output);
+    bool exist_packet_header;    
+    struct packet* (*decode)(struct packet_buffer *input);
+    bool (*encode)(struct packet *packet, struct packet_buffer *output);
 };
 
 
