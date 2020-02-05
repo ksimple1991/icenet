@@ -1,5 +1,18 @@
 #include "packet_queue.h"
 
+void packet_set_header(struct packet *packet, struct packet_header *header)
+{
+    if (header != NULL)
+    {
+        memcpy(&packet->header, header, sizeof(struct packet_header));
+    }
+}
+
+struct packet_header* packet_get_header(struct packet *packet)
+{
+    return &packet->header;
+}
+
 bool packet_queue_init(struct packet_queue *queue)
 {
     queue->head = queue->tail = NULL;
@@ -31,11 +44,11 @@ struct packet* packet_queue_pop(struct packet_queue *queue)
     return packet;
 }
 
-bool packet_queue_push(struct packet_queue *queue, struct packet *packet)
+void packet_queue_push(struct packet_queue *queue, struct packet *packet)
 {
     if (packet == NULL)
     {
-        return false;
+        return;
     }
 
     packet->next = NULL;
@@ -50,7 +63,7 @@ bool packet_queue_push(struct packet_queue *queue, struct packet *packet)
     
     queue->tail = packet;
     queue->size++;
-    return true;
+    return;
 }
 
 void packet_queue_clear(struct packet_queue *queue)
@@ -65,7 +78,10 @@ void packet_queue_clear(struct packet_queue *queue)
         struct packet *packet = queue->head;
         queue->head = packet->next;
 
-        // TODO: packet free
+        if (packet->free != NULL)
+        {
+            packet->free(packet);
+        }
     }
 
     queue->head = queue->tail = NULL;
@@ -98,7 +114,6 @@ bool packet_queue_empty(struct packet_queue *queue)
 {
     return (queue->size == 0);
 }
-
 
 struct packet* packet_queue_get_timeout_list(struct packet_queue *queue, int64_t now)
 {

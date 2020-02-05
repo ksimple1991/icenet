@@ -25,6 +25,8 @@ extern "C" {
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
+#define ICENET_MAX_TIME (INT64_MAX)
+
 typedef union user_data
 {
     void *ptr;

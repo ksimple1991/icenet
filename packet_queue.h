@@ -20,6 +20,7 @@ struct packet
     int64_t expire_time;
     void *channel;
     struct packet *next;
+    void (*free)(struct packet *packet);
 };
 
 struct packet_queue
@@ -29,13 +30,17 @@ struct packet_queue
     struct packet *tail;
 };
 
+void packet_set_header(struct packet *packet, struct packet_header *header);
+
+struct packet_header* packet_get_header(struct packet *packet);
+
 bool packet_queue_init(struct packet_queue *queue);
 
 void packet_queue_destroy(struct packet_queue *queue);
 
 struct packet* packet_queue_pop(struct packet_queue *queue);
 
-bool packet_queue_push(struct packet_queue *queue, struct packet *packet);
+void packet_queue_push(struct packet_queue *queue, struct packet *packet);
 
 void packet_queue_clear(struct packet_queue *queue);
 
@@ -44,7 +49,6 @@ struct packet* packet_queue_get_timeout_list(struct packet_queue *queue, int64_t
 void packet_queue_move_to(struct packet_queue *src, struct packet_queue *dst);
 
 bool packet_queue_empty(struct packet_queue *queue);
-
 
 #ifdef __cplusplus
 }

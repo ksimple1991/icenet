@@ -7,14 +7,46 @@
 
 static atomic_int_least32_t global_channel_id;
 
+struct channel *channel_get_next(struct channel *channel)
+{
+    return channel->next;
+}
+
 bool channelpool_init(struct channelpool *pool)
 {
+    pool->max_use_count = 0;
+    pool->use_list_head = NULL;
+    pool->use_list_tail = NULL;
+    pool->free_list_head = NULL;
+    pool->free_list_tail = NULL;
+    pool->cluster_list = NULL;
+
+    if (init_pthread_lock(&pool->mutex) != 0)
+    {
+        return false;
+    }
+
     return true;
 }
 
 void channelpool_destroy(struct channelpool *pool)
 {
+    pthread_mutex_destroy(&pool->mutex);
 
+    if (pool->cluster_list == NULL)
+    {
+        return;
+    }
+
+    while (pool->cluster_list != NULL)
+    {
+        struct channel *channel = pool->cluster_list;
+        pool->cluster_list = pool->cluster_list->next;
+        
+        /**
+         * TODO: free channel
+         */
+    }
 }
 
 struct channel* channelpool_alloc_channel(struct channelpool *pool)
@@ -92,25 +124,172 @@ struct channel* channelpool_alloc_channel(struct channelpool *pool)
 
 bool channelpool_free_channel(struct channelpool *pool, struct channel *channel)
 {
+    pthread_mutex_lock(&pool->mutex);
 
+    // 查找use_map，并删除
+struct channel *loop = pool->use_map;
+    while (loop != NULL)
+    {
+        if (loop->id == channel->id)
+        {
+            break;
+        }
+        loop = loop->next;
+    }
+
+    if (loop == NULL)
+    {
+        pthread_mutex_unlock(&pool->mutex);
+        return false;
+    }
+
+    // TODO: 从use_map中移除
+    assert(false);
+
+
+    // 加入到use_list
+    if (channel == pool->use_list_head)
+    {
+        pool->use_list_head = channel->next;
+    }
+    if (channel == pool->use_list_tail)
+    {
+        pool->use_list_tail = channel->prev;
+    }
+
+    if (channel->prev != NULL)
+    {
+        channel->prev->next = channel->next;
+    }
+    if (channel->next != NULL)
+    {
+        channel->next->prev = channel->prev;
+    }
+
+    // 加入到free_list
+    channel->prev = pool->free_list_tail;
+    channel->next = NULL;
+    if (pool->free_list_tail == NULL)
+    {
+        pool->free_list_head = channel;
+    }
+    else
+    {
+        pool->free_list_tail->next = channel;
+    }
+    pool->free_list_tail = channel;
+    channel->id = 0;
+    channel->handler = NULL;
+    channel->args = NULL;
+
+    pthread_mutex_unlock(&pool->mutex);
+    return true;
 }
 
-bool channnelpool_appendp_channel(struct channelpool *pool, struct channel *channel)
+bool channelpool_append_channel(struct channelpool *pool, struct channel *channel)
 {
-
+    return true;
 }
 
-struct channel* channelpool_get_timeout_list(struct channelpool *pool)
+struct channel *channelpool_offer_channel(struct channelpool *pool, uint32_t id)
 {
+    return NULL;
+}
 
+struct channel* channelpool_get_timeout_list(struct channelpool *pool, int64_t now)
+{
+    struct channel *list = NULL;
+
+    pthread_mutex_lock(&pool->mutex);
+    if (pool->use_list_head == NULL)
+    {
+        pthread_mutex_unlock(&pool->mutex);
+        return list;
+    }
+    
+    struct channel *channel = pool->use_list_head;
+    while (channel != NULL)
+    {
+        if (channel->expire_time >= now)
+        {
+            break;
+        }
+
+        /**
+         * TODO: erase use_map
+         */
+        channel = channel->next;
+    }
+
+    if (channel != pool->use_list_head)
+    {
+        list = pool->use_list_head;
+        if (channel == NULL)
+        {
+            pool->use_list_head = pool->use_list_tail = NULL;
+        }
+        else
+        {
+            if (channel->prev != NULL)
+            {
+                channel->prev->next = NULL;
+            }
+            channel->prev = NULL;
+            pool->use_list_head = channel;
+        }
+        
+    }
+    pthread_mutex_unlock(&pool->mutex);
+    return list;
 }
 
 int channelpool_get_use_list_count(struct channelpool *pool)
 {
-
+    return pool->use_map_size;
 }
 
 bool channelpool_append_free_list(struct channelpool *pool, struct channel *add_list)
 {
+    if (add_list == NULL)
+    {
+        return true;
+    }
 
+    pthread_mutex_lock(&pool->mutex);
+    struct channel *tail = add_list;
+    while (tail->next != NULL)
+    {
+        tail->id = 0;
+        tail->handler = NULL;
+        tail->args = NULL;
+        tail = tail->next;
+    }
+
+    tail->id = 0;
+    tail->handler = NULL;
+    tail->args = NULL;
+
+    add_list->prev = pool->free_list_tail;
+    if (pool->free_list_tail == NULL)
+    {
+        pool->free_list_head = add_list;
+    }
+    else
+    {
+        pool->free_list_tail->next = add_list;
+    }
+    pool->free_list_tail = add_list;
+
+    pthread_mutex_unlock(&pool->mutex);
+    return true;
+}
+
+void channelpool_set_expire_time(struct channelpool *pool, struct channel *channel, int64_t now)
+{
+    pthread_mutex_lock(&pool->mutex);
+    if (channel != NULL)
+    {
+        channel->expire_time = now;
+    }
+    pthread_mutex_unlock(&pool->mutex);
 }

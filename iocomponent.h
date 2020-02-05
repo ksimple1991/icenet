@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-#define ICENET_MAX_TIME (INT64_MAX)
 
 struct epoll_socket_event;
 struct transport;
@@ -36,7 +35,7 @@ enum
  */
 struct iocomponent
 {
-    struct list_head *list;
+    struct list_head list;
     int type;
     struct transport *owner;
     struct isocket *socket;
@@ -46,6 +45,7 @@ struct iocomponent
     bool auto_reconn; // 自动重连
     bool inuse;
     int64_t last_use_time;
+    int refcount;
     void *extra;
 
     bool (*init)(struct iocomponent *ioc, struct transport *owner, \
@@ -64,6 +64,11 @@ bool iocomponent_init(struct iocomponent *ioc, struct transport *owner, \
     struct isocket *socket);
 
 void iocomponent_enable_write(struct iocomponent *ioc, bool write_on);
+
+bool iocomponent_is_connect_state(struct iocomponent *ioc);
+
+void iocomponent_add_def(struct iocomponent *ioc);
+void iocomponent_sub_def(struct iocomponent *ioc);
 
 #ifdef __cplusplus
 }

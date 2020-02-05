@@ -58,3 +58,17 @@ void iocomponent_enable_write(struct iocomponent *ioc, bool write_on)
     }
 }
 
+bool iocomponent_is_connect_state(struct iocomponent *ioc)
+{
+    return (ioc->state == IOC_CONNECTED || ioc->state == IOC_CONNECTING);
+}
+
+void iocomponent_add_def(struct iocomponent *ioc)
+{
+    ++ioc->refcount;
+}
+
+void iocomponent_sub_def(struct iocomponent *ioc)
+{
+    --ioc->refcount;
+}

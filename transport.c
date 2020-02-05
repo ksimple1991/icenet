@@ -1,5 +1,5 @@
 
-#include "csv_packet_encode.h"
+#include "buffer.h"
 #include "iocomponent.h"
 #include "tcp.h"
 #include <assert.h>
@@ -8,6 +8,13 @@
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+
+
+static void* transport_event_loop(struct transport *trans, \
+    struct epoll_socket_event *socket_event);
+
+static void* transport_timeout_loop(void *args);
+
 
 void transport_add_component(struct transport *trans, \
     struct iocomponent *ioc, bool read_on, bool write_on);
@@ -120,7 +127,7 @@ bool transport_wait(struct transport *trans)
     return true;
 }
 
-void transport_event_loop(struct transport *trans, \
+static void* transport_event_loop(struct transport *trans, \
     struct epoll_socket_event *socket_event)
 {
     struct ioevent events[MAX_SOCKET_EVENTS] = {0};
@@ -170,8 +177,10 @@ void transport_event_loop(struct transport *trans, \
     }
 }
 
-void transport_timeout_loop(struct transport *trans)
+static void* transport_timeout_loop(void *args)
 {
+    struct transport *trans = (struct transport *)args;
+
     while (!trans->stop)
     {
         // 检测IOC是否超时
@@ -182,18 +191,51 @@ void transport_timeout_loop(struct transport *trans)
     }
 }
 
+int create_thread_worker(pthread_t *tid, void* (*run)(void *args), void *args)
+{
+    int result;
+    pthread_attr_t attr;
+
+    if ((result = pthread_attr_init(&attr)) != 0)
+    {
+        return result;
+    }
+
+    if ((result = pthread_attr_setdetachstate(&attr, \
+        PTHREAD_CREATE_DETACHED)) != 0)
+    {
+        pthread_attr_destroy(&attr);
+        return result;
+    }
+
+    if ((result = pthread_create(tid, &attr, run, args)) != 0)
+    {
+        pthread_attr_destroy(&attr);
+        return result;
+    }
+
+    pthread_attr_destroy(&attr);
+    return result;
+}
+
 /**
  * 线程函数
  */
 void transport_run(struct transport *trans)
 {
-    
+    int result;
 
     // 启动读写线程
     transport_event_loop(trans);
 
     // 启动超时检查线程
-    transport_timeout_loop(trans);
+
+    result = create_thread_worker(&trans->timeout_worker, \
+        transport_timeout_loop, trans);
+    if (result != 0)
+    {
+
+    }
 
 }
 
@@ -247,7 +289,7 @@ void transport_remove_component(struct transport *trans, struct iocomponent *ioc
     trans->ioc_list_changed = true;
 }
 
-static bool parse_addr(char *src, char **args, int cnt)
+static int parse_addr(char *src, char **args, int cnt)
 {
     int index = 0;
     char *prev = src;
@@ -403,3 +445,4 @@ bool transport_disconnect(struct transport *trans, struct connection *connection
 
     return true;
 }
+

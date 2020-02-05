@@ -1,7 +1,6 @@
 #ifndef ICENET_CHANNEL_POOL_H
 #define ICENET_CHANNEL_POOL_H
 
-#include "connection.h"
 #include "list.h"
 #include "util.h"
 #include <pthread.h>
@@ -23,10 +22,11 @@ struct channel
 struct channelpool
 {
     pthread_mutex_t mutex;
-    struct list_head cluster_list;
+    struct channel *cluster_list;
 
     // TODO: hash map
-    void *use_map;
+    struct channel *use_map;
+    int map_size;
     int use_map_size;
 
     struct channel *free_list_head;
@@ -44,10 +44,17 @@ struct channel* channelpool_alloc_channel(struct channelpool *pool);
 
 bool channelpool_free_channel(struct channelpool *pool, struct channel *channel);
 
-struct channel* channelpool_get_timeout_list(struct channelpool *pool);
+bool channelpool_append_channel(struct channelpool *pool, struct channel *channel);
+
+bool channelpool_append_free_list(struct channelpool *pool, struct channel *add_list);
+
+struct channel* channelpool_offer_channel(struct channelpool *pool, uint32_t id);
+
+struct channel* channelpool_get_timeout_list(struct channelpool *pool, int64_t now);
 
 int channelpool_get_use_list_count(struct channelpool *pool);
 
+void channelpool_set_expire_time(struct channelpool *pool, struct channel *channel, int64_t now);
 
 #ifdef __cplusplus
 }

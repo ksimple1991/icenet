@@ -14,6 +14,8 @@ typedef struct transport
     bool stop;
     int threads_num;
     pthread_t *worker_tids;
+    pthread_t timeout_worker;
+    pthread_t event_loop_worker;
     struct epoll_socket_event sock_event;
     bool ioc_list_changed;
     int ioc_count;
@@ -51,16 +53,12 @@ struct iocomponent* transport_listen(struct transport *trans, \
 struct connection* transport_connect(struct transport *trans, \
     const char *spec, bool auto_reconn);
 
+
 void transport_disconnect(struct transport *trans, struct connection *connection);
+
 
 void transport_add_component(struct transport *trans, \
     struct iocomponent *ioc, bool read_on, bool write_on);
-
-void transport_event_loop(struct transport *trans, \
-    struct epoll_socket_event *socket_event);
-
-void transport_timeout_loop(struct transport *trans);
-
 
 #ifdef __cplusplus
 }
