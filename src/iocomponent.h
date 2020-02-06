@@ -36,6 +36,8 @@ enum
 struct iocomponent
 {
     struct list_head list;
+    struct iocomponent *prev;
+    struct iocomponent *next;
     int type;
     struct transport *owner;
     struct isocket *socket;
@@ -67,8 +69,9 @@ void iocomponent_enable_write(struct iocomponent *ioc, bool write_on);
 
 bool iocomponent_is_connect_state(struct iocomponent *ioc);
 
-void iocomponent_add_def(struct iocomponent *ioc);
-void iocomponent_sub_def(struct iocomponent *ioc);
+int iocomponent_get_ref(struct iocomponent *ioc);
+void iocomponent_add_ref(struct iocomponent *ioc);
+void iocomponent_sub_ref(struct iocomponent *ioc);
 
 #ifdef __cplusplus
 }

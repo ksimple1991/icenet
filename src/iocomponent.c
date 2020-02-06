@@ -38,6 +38,8 @@ bool iocomponent_init(struct iocomponent *ioc, struct transport *owner, \
     ioc->last_use_time = get_time();
     ioc->inuse = false;
     ioc->state = IOC_UNCONNECTED;
+    ioc->refcount = 0;
+    ioc->prev = ioc->next = NULL;
     return true;
 }
 
@@ -63,12 +65,17 @@ bool iocomponent_is_connect_state(struct iocomponent *ioc)
     return (ioc->state == IOC_CONNECTED || ioc->state == IOC_CONNECTING);
 }
 
-void iocomponent_add_def(struct iocomponent *ioc)
+int iocomponent_get_ref(struct iocomponent *ioc)
+{
+    return ioc->refcount;
+}
+
+void iocomponent_add_ref(struct iocomponent *ioc)
 {
     ++ioc->refcount;
 }
 
-void iocomponent_sub_def(struct iocomponent *ioc)
+void iocomponent_sub_ref(struct iocomponent *ioc)
 {
     --ioc->refcount;
 }

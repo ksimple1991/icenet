@@ -16,24 +16,23 @@ bool tcp_component_handle_write(struct iocomponent *ioc);
 bool tcp_component_handle_read(struct iocomponent *ioc);
 void tcp_component_check_timeout(struct iocomponent *ioc, int64_t now);
 
-struct iocomponent acceptor_component = 
-{
-    .list = NULL,
-    .owner = NULL,
-    .socket = NULL,
-    .socket_event = NULL,
-    .state = IOC_UNCONNECTED,
-    .auto_reconn = false,
-    .inuse = false,
-    .last_use_time = 0,
-    .buffer = NULL,
-    .init = tcp_acceptor_init,
-    .close = tcp_acceptor_close,
-    .handle_write_event = NULL,
-    .handle_read_event = tcp_acceptor_handle_read,
-    .check_timeout = tcp_acceptor_check_timeout
-};
-
+// struct iocomponent acceptor_component = 
+// {
+//     .list = NULL,
+//     .owner = NULL,
+//     .socket = NULL,
+//     .socket_event = NULL,
+//     .state = IOC_UNCONNECTED,
+//     .auto_reconn = false,
+//     .inuse = false,
+//     .last_use_time = 0,
+//     .buffer = NULL,
+//     .init = tcp_acceptor_init,
+//     .close = tcp_acceptor_close,
+//     .handle_write_event = NULL,
+//     .handle_read_event = tcp_acceptor_handle_read,
+//     .check_timeout = tcp_acceptor_check_timeout
+// };
 
 bool tcp_acceptor_init(struct iocomponent *ioc, struct transport *owner, \
         struct socket *socket, bool is_server)
@@ -72,20 +71,16 @@ bool tcp_acceptor_handle_read(struct iocomponent *ioc)
         return false;
     }
 
-    struct iocomponent *ioc \
+    struct iocomponent *tcp_component \
         = (struct iocomponent *)malloc(sizeof(struct iocomponent));
-    if (ioc == NULL)
+    if (tcp_component == NULL)
     {
         isocket_del(socket);
         return false;
     }
 
-    struct iocomponent *client;
-
     // 创建 tcp ioc 加入到 trans
-
-    transport_add_iocomponent(ioc->trans, client, true, false);
-
+    transport_add_component(ioc->owner, tcp_component, true, false);
     return true;
 }
 

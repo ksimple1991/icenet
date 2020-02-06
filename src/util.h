@@ -20,7 +20,7 @@ extern "C" {
 #define LOG_LEVEL_INFO  2
 #define LOG_LEVEL_DEBUG 3
 
-#define LOG(level, _fmt_, args...) printf("[%s:%ld] " _fmt_, __FUNCTION__, __LINE__, ##args)
+#define LOG(level, _fmt_, args...) printf("[%s:%d] " _fmt_ "\n", __FUNCTION__, __LINE__, ##args)
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))

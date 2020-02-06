@@ -35,7 +35,7 @@ void isocket_shutdown(struct isocket *socket);
 
 bool isocket_create_udp(struct isocket *socket);
 
-int isocket_get_fd(struct isocket *socket);
+int isocket_get_handle(struct isocket *socket);
 
 uint64_t isocket_get_peer_id(struct isocket *socket);
 

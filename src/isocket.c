@@ -148,7 +148,7 @@ bool isocket_setup(struct isocket *socket, int sockfd, struct sockaddr *host_add
     memcpy(&socket->address, host_address, sizeof(socket->address));
 }
 
-int isocket_get_fd(struct isocket *socket)
+int isocket_get_handle(struct isocket *socket)
 {
     return socket->fd;
 }

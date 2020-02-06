@@ -217,7 +217,7 @@ bool connection_post_packet(struct connection *conn, struct packet *packet, bool
 
     if (conn->isserver && conn->ioc != NULL)
     {
-        iocomponent_sub_def(conn->ioc);
+        iocomponent_sub_ref(conn->ioc);
 
     }
 
@@ -256,7 +256,7 @@ bool connection_handle_packet(struct connection *conn, struct packet_buffer *inp
     {
         if (conn->ioc != NULL)
         {
-            iocomponent_add_def(conn->ioc);
+            iocomponent_add_ref(conn->ioc);
         }
         ret_code = ;
     }
