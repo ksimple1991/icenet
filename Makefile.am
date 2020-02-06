@@ -1,0 +1,6 @@
+SUBDIRS=src test
+UNITTESTDIRS=test
+.PHONY: $(UNITTESTDIRS)
+test: $(UNITTESTDIRS)
+$(UNITTESTDIRS):
+	$(MAKE) -C $@ test

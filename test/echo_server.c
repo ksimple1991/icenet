@@ -20,29 +20,24 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;        
     }
 
+
+
+    signal(SIGINT, signal_handle);
+
     transport_init(&echo_transport);
 
-    signal(SIGTERM, signal_handle);
-    signal(SIGINT, signal_handle);
-    signal(SIGQUIT, signal_handle);
-
     // 线程开始跑
-    echo_server_start(&echo_transport);
-
-}
-
-void echo_server_start(struct transport *echo_server)
-{
-    transport_start(echo_server);
+    // transport_start
 
     // 
     char *spec = strdup(argv[1]);
-    struct iocomponent *ioc = transport_listen(echo_server, spec);
+    struct iocomponent *ioc = transport_listen(&echo_transport, spec);
     if (ioc == NULL)
     {
         printf("listen errno");
         return;
     }
 
-    transport_wait(echo_transport);
+    transport_wait(&echo_transport);
 }
+
