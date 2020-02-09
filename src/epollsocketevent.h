@@ -2,6 +2,8 @@
 #define ICENET_EPOLLSOCKETEVENT_H
 
 #include "isocket.h"
+#include "iocomponent.h"
+#include "internal.h"
 #include <stdbool.h>
 #include <sys/epoll.h>
 

@@ -3,17 +3,18 @@
 
 #include "share_func.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-// #define log_notice(msg, ...) \
-//     ice_log_notice(MODULE_CSTORE, MODULE_RBLD, msg, ##__VA_ARGS__)
 
 #define LOG_LEVEL_ERROR 0
 #define LOG_LEVEL_WARN  1

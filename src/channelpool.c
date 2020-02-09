@@ -19,7 +19,9 @@ bool channelpool_init(struct channelpool *pool)
     pool->use_list_tail = NULL;
     pool->free_list_head = NULL;
     pool->free_list_tail = NULL;
-    pool->cluster_list = NULL;
+    // pool->cluster_list = NULL;
+
+    INIT_LIST_HEAD(&pool->cluster);
 
     if (init_pthread_lock(&pool->mutex) != 0)
     {
@@ -33,20 +35,34 @@ void channelpool_destroy(struct channelpool *pool)
 {
     pthread_mutex_destroy(&pool->mutex);
 
-    if (pool->cluster_list == NULL)
+    // if (pool->cluster_list == NULL)
+    // {
+    //     return;
+    // }
+
+    // while (pool->cluster_list != NULL)
+    // {
+    //     struct channel *channel = pool->cluster_list;
+    //     pool->cluster_list = pool->cluster_list->next;
+        
+    //     /**
+    //      * TODO: free channel
+    //      */
+    //     free(channel);
+    // }
+
+    struct channel *channel;
+    struct channel *next;
+
+    list_for_each_entry_safe(channel, next, &pool->cluster, cluster)
     {
-        return;
+        /**
+         * TODO: destroy channel
+         */
+        free(channel);
     }
 
-    while (pool->cluster_list != NULL)
-    {
-        struct channel *channel = pool->cluster_list;
-        pool->cluster_list = pool->cluster_list->next;
-        
-        /**
-         * TODO: free channel
-         */
-    }
+
 }
 
 struct channel* channelpool_alloc_channel(struct channelpool *pool)
@@ -56,6 +72,7 @@ struct channel* channelpool_alloc_channel(struct channelpool *pool)
     pthread_mutex_lock(&pool->mutex);
     if (pool->free_list_head == NULL)
     {
+        assert(CHANNEL_CLUSTER_SIZE > 2);
         struct channel *channel_cluster = (struct channel *) \
             malloc(sizeof(struct channel) * CHANNEL_CLUSTER_SIZE);
         if (channel_cluster == NULL)
@@ -64,6 +81,11 @@ struct channel* channelpool_alloc_channel(struct channelpool *pool)
             return NULL;
         }
         memset(channel_cluster, 0, sizeof(struct channel) * CHANNEL_CLUSTER_SIZE);
+
+        /**
+         * TODO: init channel
+         */
+        list_add_tail(&channel_cluster->cluster, &pool->cluster);
 
         pool->free_list_head = pool->free_list_tail = &channel_cluster[1];
         for (int i = 2; i < CHANNEL_CLUSTER_SIZE; i++)

@@ -2,6 +2,7 @@
 #define ICENET_PACKET_STREAMER_H
 
 #include "buffer.h"
+#include "internal.h"
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sys/socket.h>
@@ -10,13 +11,10 @@
 extern "C" {
 #endif
 
-struct packet;
-
-
 struct packet_streamer
 {
     bool exist_packet_header;    
-    struct packet* (*decode)(struct packet_buffer *input);
+    struct packet* (*decode)(struct packet_buffer *input, struct packet_header *header);
     bool (*encode)(struct packet *packet, struct packet_buffer *output);
 };
 

@@ -1,7 +1,7 @@
 #ifndef ICENET_PACKET_QUEUE_H
 #define ICENET_PACKET_QUEUE_H
 
-#include "util.h"
+#include "internal.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +18,7 @@ struct packet
 {
     struct packet_header header;
     int64_t expire_time;
-    void *channel;
+    struct channel *channel;
     struct packet *next;
     void (*free)(struct packet *packet);
 };
@@ -33,6 +33,9 @@ struct packet_queue
 void packet_set_header(struct packet *packet, struct packet_header *header);
 
 struct packet_header* packet_get_header(struct packet *packet);
+
+uint32_t packet_get_channel_id(struct packet *packet);
+
 
 bool packet_queue_init(struct packet_queue *queue);
 

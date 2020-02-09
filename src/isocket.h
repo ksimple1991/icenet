@@ -1,6 +1,7 @@
 #ifndef ICENET_ISOCKET_H
 #define ICENET_ISOCKET_H
 
+#include "internal.h"
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sys/socket.h>
@@ -29,7 +30,7 @@ bool isocket_set_address(struct isocket *socket, const char *address, const int 
 
 const char *isocket_get_address_str(struct isocket *socket);
 
-void isocket_close(struct isocketet *socket);
+void isocket_close(struct isocket *socket);
 
 void isocket_shutdown(struct isocket *socket);
 

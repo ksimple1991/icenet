@@ -1,8 +1,7 @@
 #ifndef ICENET_CHANNEL_POOL_H
 #define ICENET_CHANNEL_POOL_H
 
-#include "list.h"
-#include "util.h"
+#include "internal.h"
 #include <pthread.h>
 
 #ifdef __cplusplus
@@ -17,12 +16,21 @@ struct channel
     int64_t expire_time;
     struct channel *prev;
     struct channel *next;
+
+    struct list_head cluster;
+};
+
+struct channel_cluster
+{
+    struct channel *channel_list;
+    struct channel_cluster *next;
 };
 
 struct channelpool
 {
     pthread_mutex_t mutex;
     struct channel *cluster_list;
+    struct list_head cluster;
 
     // TODO: hash map
     struct channel *use_map;

@@ -13,6 +13,11 @@ struct packet_header* packet_get_header(struct packet *packet)
     return &packet->header;
 }
 
+uint32_t packet_get_channel_id(struct packet *packet)
+{
+    return packet->header.chid;
+}
+
 bool packet_queue_init(struct packet_queue *queue)
 {
     queue->head = queue->tail = NULL;

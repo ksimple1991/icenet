@@ -1,6 +1,7 @@
 #ifndef ICENET_CONNECTION_H
 #define ICENET_CONNECTION_H
 
+#include "internal.h"
 #include "channelpool.h"
 #include "iocomponent.h"
 #include "isocket.h"
@@ -16,6 +17,7 @@ extern "C" {
 
 #ifndef UNUSED
 #define UNUSED(v) ((void)(v))
+#endif
 
 struct ipacket_handler
 {
@@ -30,9 +32,10 @@ struct connection
     struct iocomponent *ioc;
     struct isocket *socket;
     struct packet_streamer *streamer;
+    struct iserver_adapter *adapter; // 服务器适配器
 
     struct packet_queue input_queue;
-    struct pakcet_queue output_queue;
+    struct packet_queue output_queue;
     struct packet_queue my_queue;
     pthread_mutex_t output_mutex;
     pthread_cond_t output_cond;
@@ -57,8 +60,6 @@ void connection_set_default_packet_handler(struct connection *conn, struct ipack
  */
 void connection_set_queue_limit(struct connection *conn, int limit);
 
-void connection_set_iocomponent(struct connection *conn, struct iocomponent *ioc);
-
 struct iocomponent* connection_get_iocomponetn(struct connection *conn);
 
 int connection_get_input_queue_length(struct connection *conn);
@@ -69,10 +70,10 @@ bool connection_is_connect_state(struct connection *conn);
 
 void connection_disconnect(struct connection *conn);
 
-bool connection_post_packet(struct connection *conn, struct packet *packet);
+bool connection_post_packet(struct connection *conn, struct ipacket_handler *handler, \
+    void *args, struct packet *packet, bool noblocking);
 
 bool connection_handle_packet(struct connection *conn, struct packet_buffer *input);
-
 
 
 #ifdef __cplusplus

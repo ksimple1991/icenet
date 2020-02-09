@@ -1,5 +1,6 @@
 #include "connection.h"
-#include "util.h"
+
+bool connection_check_timeout(struct connection *conn, int64_t now);
 
 bool connection_init(struct connection *conn, struct isocket *socket, \
     struct packet_streamer *streamer)
@@ -89,11 +90,6 @@ void connection_set_queue_limit(struct connection *conn, int limit)
     conn->queue_limit = limit;
 }
 
-void connection_set_iocomponent(struct connection *conn, struct iocomponent *ioc)
-{
-    conn->ioc = ioc;
-}
-
 struct iocomponent* connection_get_iocomponetn(struct connection *conn)
 {
     return conn->ioc;
@@ -130,14 +126,15 @@ void connection_disconnect(struct connection *conn)
     connection_check_timeout(conn, ICENET_MAX_TIME);
 }
 
-bool connection_post_packet(struct connection *conn, struct packet *packet, bool noblocking)
+bool connection_post_packet(struct connection *conn, struct ipacket_handler *handler, \
+    void *args, struct packet *packet, bool noblocking)
 {
     if (conn->ioc == NULL)
     {
         return false;
     }
 
-    if (!connection_is_connect_state(conn->ioc))
+    if (!connection_is_connect_state(conn))
     {
         if (conn->ioc->auto_reconn == false)
         {
@@ -173,6 +170,23 @@ bool connection_post_packet(struct connection *conn, struct packet *packet, bool
         /**
          * 存在包头，则设置channel
          */
+        uint32_t chid = packet_get_channel_id(packet);
+        if (conn->isserver)
+        {
+            assert(chid != 0);
+        }
+        else
+        {
+            channel = channelpool_alloc_channel(&conn->pool);
+            if (channel == NULL)
+            {
+                LOG(LOG_LEVEL_ERROR, "alloc channel error, id: %u", chid);
+                return false;
+            }
+            channel->handler = handler;
+            channel->args = args;
+            packet->channel = channel;
+        }
     }
 
     pthread_mutex_lock(&conn->output_mutex);
@@ -203,7 +217,7 @@ bool connection_post_packet(struct connection *conn, struct packet *packet, bool
                 abstime.tv_nsec = 0;
                 if (pthread_cond_timedwait(&conn->output_cond, &conn->output_mutex, &abstime) != 0)
                 {
-                    if (connection_is_connect_state(conn->ioc) == false)
+                    if (connection_is_connect_state(conn) == false)
                     {
                         break;
                     }
@@ -218,7 +232,6 @@ bool connection_post_packet(struct connection *conn, struct packet *packet, bool
     if (conn->isserver && conn->ioc != NULL)
     {
         iocomponent_sub_ref(conn->ioc);
-
     }
 
     return true;
@@ -227,6 +240,7 @@ bool connection_post_packet(struct connection *conn, struct packet *packet, bool
 bool connection_handle_packet(struct connection *conn, struct packet_buffer *input)
 {
     struct packet *packet;
+    struct packet_header *header;
     int ret_code;
     void *args;
     struct channel *channel;
@@ -240,17 +254,24 @@ bool connection_handle_packet(struct connection *conn, struct packet_buffer *inp
     packet = conn->streamer->decode(input, header);
     if (packet == NULL)
     {
-        
+        /**
+         * TODO: Bad packet
+         */
+        packet = NULL;
     }
     else
     {
         packet_set_header(packet, header);
-        if (conn->isserver && )
-        {
-            return true;
-        }
+        
+        /**
+         * TODO: 批量调用暂不处理
+         */
+        // 批量调用，直接放入queue
+        // {
+        // if (conn->isserver && )
+        //     return true;
+        // }
     }
-    
 
     if (conn->isserver)
     {
@@ -258,7 +279,7 @@ bool connection_handle_packet(struct connection *conn, struct packet_buffer *inp
         {
             iocomponent_add_ref(conn->ioc);
         }
-        ret_code = ;
+        ret_code = conn->adapter->handle_packet(conn, packet);
     }
     else
     {

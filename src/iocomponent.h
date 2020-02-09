@@ -51,11 +51,11 @@ struct iocomponent
     void *extra;
 
     bool (*init)(struct iocomponent *ioc, struct transport *owner, \
-        struct socket *socket, bool is_server);
+        struct isocket *socket, bool is_server);
     void (*close)(struct iocomponent *ioc);
     bool (*handle_wirte_event)(struct iocomponent *ioc);
     bool (*handle_read_event)(struct iocomponent *ioc);
-    void (*check_timeout)(struct iocomonent *ioc, int64_t now);
+    void (*check_timeout)(struct iocomponent *ioc, int64_t now);
 };
 
 struct iocomponent* iocomponent_new();

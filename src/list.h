@@ -1,8 +1,30 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-#ifndef __TOOLS_LINUX_LIST_H
-#define __TOOLS_LINUX_LIST_H
+#ifndef __ICE_LIST_H__
+#define __ICE_LIST_H__
 
-#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+// #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C"{
+#endif /* __cplusplus */
+
+/*
+ * These are non-NULL pointers that will result in page faults
+ * under normal circumstances, used to verify that nobody uses
+ * non-initialized list entries.
+ */
+#define LIST_POISON1  ((void *) 0x00100100)
+#define LIST_POISON2  ((void *) 0x00200200)
+
+#ifdef __GNUC__
+    #define member_type(type, member) __typeof(((type *)0)->member)
+#else
+    #define member_type(type, member) const void
+#endif
+
+#define container_of(ptr, type, member) \
+    ( (type *)( (char *)(member_type(type, member) *){ ptr } - offsetof(type,member) ) )
 
 struct list_head
 {
@@ -90,7 +112,7 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
 static inline void __list_del(struct list_head * prev, struct list_head * next)
 {
 	next->prev = prev;
-	WRITE_ONCE(prev->next, next);
+	prev->next = next;
 }
 
 /**
@@ -595,6 +617,19 @@ static inline void list_splice_tail_init(struct list_head *list,
  * You lose the ability to access the tail in O(1).
  */
 
+struct hlist_node;
+
+struct hlist_head
+{
+	struct hlist_node *first;
+};
+
+struct hlist_node
+{
+	struct hlist_node *next;
+	struct hlist_node **pprev;
+};
+
 #define HLIST_HEAD_INIT { .first = NULL }
 #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
@@ -619,7 +654,8 @@ static inline void __hlist_del(struct hlist_node *n)
 	struct hlist_node *next = n->next;
 	struct hlist_node **pprev = n->pprev;
 
-	WRITE_ONCE(*pprev, next);
+	// WRITE_ONCE(*pprev, next);
+	*pprev = next;
 	if (next)
 		next->pprev = pprev;
 }
@@ -772,4 +808,8 @@ static inline void list_del_range(struct list_head *begin,
 #define list_for_each_from(pos, head) \
 	for (; pos != (head); pos = pos->next)
 
-#endif /* __TOOLS_LINUX_LIST_H */
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* __ICE_LIST_H__ */

@@ -117,7 +117,7 @@ bool isocket_connect(struct isocket *socket)
     return (0 == connect(socket->fd, (struct sockaddr *)&socket->addres, sizeof(socket->address)));
 }
 
-void isocket_close(struct isocketet *socket)
+void isocket_close(struct isocket *socket)
 {
     if (socket->fd != ISOCKET_INVLID_FD)
     {
